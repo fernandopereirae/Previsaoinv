@@ -2,13 +2,16 @@ let interval;
 let successCount = 0;
 let errorCount = 0;
 
-// Substitua pela sua chave da Alpha Vantage
+// Substitua 'YOUR_API_KEY' pela sua chave da Alpha Vantage
 const apiKey = "H46I11R9PYFXUCPU";
 const symbols = ["AAPL", "MSFT", "GOOGL"]; // Ações monitoradas
 
 // Função para buscar dados da API Alpha Vantage
 async function fetchData() {
- console.log("Iniciando busca de dados...");
+ const displayElement = document.getElementById("data-display");
+ const loadingMessage = document.getElementById("loading-message");
+
+ loadingMessage.textContent = "Carregando informações...";
  try {
    const requests = symbols.map((symbol) =>
      fetch(
@@ -16,27 +19,27 @@ async function fetchData() {
      )
    );
 
-   // Executar todas as requisições
    const responses = await Promise.all(requests);
    const data = await Promise.all(responses.map((res) => res.json()));
 
-   // Verificar se as respostas contêm os dados esperados
    if (data.some((stock) => !stock["Global Quote"])) {
      throw new Error("Dados incompletos ou inválidos retornados da API.");
    }
 
    // Processar e exibir os dados
-   const displayData = data.map((stock) => {
-     const quote = stock["Global Quote"];
-     return `${quote["01. symbol"]}: $${quote["05. price"]} (${quote["10. change percent"]})`;
-   });
+   displayElement.innerHTML = data
+     .map((stock) => {
+       const quote = stock["Global Quote"];
+       return `<p>${quote["01. symbol"]}: $${quote["05. price"]} (${quote["10. change percent"]})</p>`;
+     })
+     .join("");
 
-   document.getElementById("data-box").value = displayData.join("\n");
-   console.log("Dados atualizados com sucesso:", displayData);
+   loadingMessage.textContent = ""; // Remove mensagem de carregamento
    successCount++;
    updateStats();
  } catch (error) {
    console.error("Erro ao buscar dados:", error.message);
+   loadingMessage.textContent = "Erro ao carregar dados. Tente novamente.";
    errorCount++;
    updateStats();
  }
@@ -50,13 +53,11 @@ function updateStats() {
 
  document.getElementById("success-rate").textContent = `${successRate}%`;
  document.getElementById("error-rate").textContent = `${errorRate}%`;
- console.log(`Atualizando estatísticas: Acertos: ${successRate}%, Erros: ${errorRate}%`);
 }
 
 // Função para iniciar o intervalo de busca
 function startFetching() {
  if (!interval) {
-   console.log("Iniciando busca periódica de dados...");
    fetchData(); // Busca inicial
    interval = setInterval(fetchData, 5000); // Busca a cada 5 segundos
  }
@@ -65,7 +66,6 @@ function startFetching() {
 // Função para parar o intervalo de busca
 function stopFetching() {
  if (interval) {
-   console.log("Parando busca periódica de dados...");
    clearInterval(interval);
    interval = null;
  }
